@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Musée du Louvre — Entrez dans la lumière</title>
+    <meta name="description" content="Concept de refonte immersive du site du musée du Louvre : traversez la Pyramide en 3D et révélez les chefs-d'œuvre au pinceau." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Chargement -->
+    <div class="loader" aria-hidden="true">
+      <div class="loader__mark">
+        <svg viewBox="0 0 120 80" class="loader__pyr"><path d="M60 4 L116 76 L4 76 Z" /></svg>
+        <span class="loader__word">LOUVRE</span>
+      </div>
+      <div class="loader__bar"><span></span></div>
+      <p class="loader__pct">0</p>
+    </div>
+
+    <canvas id="journey-canvas" aria-hidden="true"></canvas>
+    <canvas id="trail" aria-hidden="true"></canvas>
+    <div class="cursor" aria-hidden="true">
+      <span class="cursor__dot"></span>
+      <span class="cursor__ring"><span class="cursor__label"></span></span>
+    </div>
+    <div class="handoff" aria-hidden="true"><img src="/paintings/joconde.jpg" alt="" /></div>
+    <div class="tag" aria-hidden="true"><em class="tag__title"></em><span class="tag__meta"></span></div>
+
+    <header class="nav">
+      <a href="#top" class="nav__logo" data-cursor="link">LOUVRE</a>
+      <nav class="nav__links">
+        <a href="#journey" data-cursor="link">Parcours</a>
+        <a href="#masters" data-cursor="link">Chefs-d'œuvre</a>
+        <a href="#collection" data-cursor="link">Collections</a>
+        <a href="#visit" data-cursor="link">Visiter</a>
+      </nav>
+      <div class="nav__right">
+        <span class="nav__lang"><b>FR</b> / EN</span>
+        <a href="#visit" class="btn btn--gold" data-cursor="link">Billetterie</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- 1. Traversée 3D -->
+      <section id="journey" class="journey">
+        <div class="chapters">
+          <div class="chapter chapter--hero" data-in="-1" data-out="0.06">
+            <p class="eyebrow">Musée du Louvre · Paris · depuis 1793</p>
+            <h1 class="hero__title" aria-label="Louvre">
+              <span>L</span><span>O</span><span>U</span><span>V</span><span>R</span><span>E</span>
+            </h1>
+            <p class="hero__sub"><em>Entrez</em> dans la lumière.</p>
+          </div>
+          <div class="chapter chapter--left" data-in="0.09" data-out="0.25">
+            <span class="chapter__num">I.</span>
+            <h2>La Pyramide</h2>
+            <p>673 losanges et triangles de verre. Imaginée par Ieoh Ming Pei, inaugurée en 1989, elle fait entrer le ciel de Paris au cœur du palais.</p>
+          </div>
+          <div class="chapter chapter--right" data-in="0.33" data-out="0.46">
+            <span class="chapter__num">II.</span>
+            <h2>La Descente</h2>
+            <p>Sous la cour Napoléon, l'escalier hélicoïdal s'enroule autour de sa colonne. En bas, neuf mille ans d'histoire de l'art vous attendent.</p>
+          </div>
+          <div class="chapter chapter--left" data-in="0.48" data-out="0.6">
+            <span class="chapter__num">III.</span>
+            <h2>La Pyramide<br /><em>inversée</em></h2>
+            <p>Suspendue la pointe en bas, elle frôle une petite pyramide de pierre sans jamais la toucher. Le dialogue silencieux de deux sommets.</p>
+          </div>
+          <div class="chapter chapter--left" data-in="0.68" data-out="0.87">
+            <span class="chapter__num">IV.</span>
+            <h2>La Grande Galerie</h2>
+            <p>De l'Antiquité à 1848, près de 35 000 œuvres exposées.<br /><span class="hint">Survolez une toile pour la découvrir.</span></p>
+          </div>
+          <div class="chapter chapter--center" data-in="0.92" data-out="2">
+            <p class="eyebrow">Salle des États · Aile Denon</p>
+            <h2 class="big"><em>Elle</em> vous attend.</h2>
+          </div>
+        </div>
+        <div class="scrollcue"><span>Défiler pour entrer</span><i></i></div>
+        <div class="journey__progress"><i></i></div>
+      </section>
+
+      <!-- 2. Chefs-d'œuvre au pinceau -->
+      <section id="masters" class="masters">
+        <div class="masters__sticky">
+          <div class="masters__text">
+            <p class="eyebrow"><span class="masters__idx">01</span> / 05 — Chefs-d'œuvre</p>
+            <h2 class="masters__title">La Joconde</h2>
+            <p class="masters__artist">Léonard de Vinci · <span class="masters__year">1503 – 1519</span></p>
+            <p class="masters__desc"></p>
+            <dl class="masters__meta">
+              <div><dt>Technique</dt><dd class="m-medium"></dd></div>
+              <div><dt>Dimensions</dt><dd class="m-size"></dd></div>
+              <div><dt>Où la voir</dt><dd class="m-room"></dd></div>
+            </dl>
+            <button class="btn btn--line masters__reveal" data-cursor="link">Révéler l'œuvre</button>
+          </div>
+          <div class="masters__stage" data-cursor="paint" data-cursor-label="Peindre">
+            <canvas id="brush-canvas"></canvas>
+            <p class="masters__hint"><svg viewBox="0 0 24 24"><path d="M3 21c3 0 5-2 5-5 0-1.7 1.3-3 3-3s3 1.3 3 3M14 13 21 3" /></svg> Passez le pinceau pour rendre ses couleurs à l'œuvre</p>
+          </div>
+          <ol class="masters__dots"><li></li><li></li><li></li><li></li><li></li></ol>
+        </div>
+      </section>
+
+      <!-- 3. Collection horizontale -->
+      <section id="collection" class="collection">
+        <div class="collection__pin">
+
+          <div class="collection__track">
+          <header class="collection__head">
+            <p class="eyebrow">Collections</p>
+            <h2>Neuf toiles,<br /><em>mille histoires.</em></h2>
+            <p>Peintures françaises, italiennes, flamandes&nbsp;: survolez chaque œuvre pour la voir sortir de l'esquisse.</p>
+          </header>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Chiffres -->
+      <section class="numbers">
+        <div class="numbers__grid">
+          <div><b data-count="1190">0</b><span>Philippe Auguste élève la forteresse du Louvre</span></div>
+          <div><b data-count="1793">0</b><span>Le palais devient musée, sous la Révolution</span></div>
+          <div><b data-count="35000" data-sep>0</b><span>œuvres exposées sur 73 000 m²</span></div>
+          <div><b data-count="8.7" data-dec>0</b><span>millions de visiteurs en 2024</span></div>
+        </div>
+      </section>
+
+      <!-- 5. Visiter -->
+      <section id="visit" class="visit">
+        <div class="visit__head">
+          <p class="eyebrow">Préparer sa visite</p>
+          <h2>Le plus grand musée<br />du monde <em>vous ouvre ses portes.</em></h2>
+        </div>
+        <div class="visit__grid">
+          <article class="card-info">
+            <h3>Horaires</h3>
+            <ul>
+              <li><span>Lun, jeu, sam, dim</span><b>9h – 18h</b></li>
+              <li><span>Mercredi, vendredi</span><b>9h – 21h</b></li>
+              <li><span>Mardi</span><b>Fermé</b></li>
+            </ul>
+          </article>
+          <article class="card-info">
+            <h3>Billets</h3>
+            <ul>
+              <li><span>Plein tarif, en ligne</span><b>dès 22 €</b></li>
+              <li><span>Moins de 18 ans</span><b>Gratuit</b></li>
+              <li><span>Moins de 26 ans (EEE)</span><b>Gratuit</b></li>
+            </ul>
+          </article>
+          <article class="card-info">
+            <h3>Accès</h3>
+            <ul>
+              <li><span>Métro</span><b>Palais-Royal – Musée du Louvre · 1, 7</b></li>
+              <li><span>Entrées</span><b>Pyramide · Carrousel · Richelieu</b></li>
+            </ul>
+          </article>
+        </div>
+        <a href="#visit" class="visit__cta" data-cursor="link">
+          <span>Réserver un créneau</span>
+          <svg viewBox="0 0 40 12"><path d="M0 6h38M33 1l5 5-5 5" /></svg>
+        </a>
+        <p class="visit__note">Informations indicatives — à vérifier sur le site officiel avant publication.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__word">LOUVRE</div>
+      <div class="footer__row">
+        <p>Concept de refonte non officiel · Images : domaine public, Wikimedia Commons</p>
+        <p>Rue de Rivoli, 75001 Paris</p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
