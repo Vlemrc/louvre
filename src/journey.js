@@ -1021,7 +1021,9 @@ export class Journey {
     const under = THREE.MathUtils.smoothstep(pos.y, 2, -3);
     const fog = this.scene.fog;
     fog.color.setRGB(0.02 + under * 0.05, 0.027 + under * 0.03, 0.047 - under * 0.02);
-    fog.density = THREE.MathUtils.lerp(0.0055, 0.0085, under);
+    // dehors, on allège le brouillard quand la caméra est loin (intro) pour que le palais reste éclairé
+    const far = Math.min(1, 105 / Math.max(105, pos.length()));
+    fog.density = THREE.MathUtils.lerp(0.0055 * far, 0.0085, under);
     this.water.visible = pos.y > 0.3;
     // miroir actif sous terre, mais aussi dès qu'on est sous le verre de la pyramide
     this.hallFloor.visible = pos.z > -60 && (pos.y < -0.5 || (pos.y < H && Math.max(Math.abs(pos.x), Math.abs(pos.z)) < B + 4));

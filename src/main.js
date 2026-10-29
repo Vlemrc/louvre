@@ -21,6 +21,8 @@ const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
 if (import.meta.env.DEV) window.__lenis = lenis;
 lenis.stop();
 lenis.on('scroll', ScrollTrigger.update);
+const nav = document.querySelector('.nav');
+
 gsap.ticker.lagSmoothing(0);
 
 $$('a[href^="#"]').forEach((a) =>
@@ -78,17 +80,116 @@ journey.onHover = (p, pt) => {
   document.body.classList.toggle('is-pointing', !!p);
 };
 
-const chapters = $$('.chapter').map((el) => ({ el, a: +el.dataset.in, b: +el.dataset.out }));
-const fadeIn = 0.035;
+/* ---------- Titres des étapes : révélation « feuille d'or » pilotée par le scroll ---------- */
+const clamp01 = gsap.utils.clamp(0, 1);
+const letterEase = gsap.parseEase('power3.out');
+
+// découpe un titre en mots (insécables) puis en lettres, en gardant <em> et <br>
+function splitLetters(el) {
+  const letters = [];
+  const walk = (node) =>
+    [...node.childNodes].forEach((n) => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach((part) => {
+          if (!part) return;
+          if (/^\s+$/.test(part)) return frag.append(' ');
+          const word = document.createElement('span');
+          word.className = 'word';
+          for (const ch of part) {
+            const s = document.createElement('span');
+            s.textContent = ch;
+            word.append(s);
+            letters.push(s);
+          }
+          frag.append(word);
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1 && n.tagName !== 'BR') walk(n);
+    });
+  walk(el);
+  return letters;
+}
+
+function prepTitle(title) {
+  const els = title.classList.contains('hero__title') ? [...title.children] : splitLetters(title);
+  const n = els.length;
+  const mid = (n - 1) / 2;
+  const letters = els.map((el, i) => {
+    el.classList.add('ch');
+    const rel = mid ? (i - mid) / mid : 0;
+    return { el, r: Math.abs(rel), dx: rel * Math.min(mid, 4) };
+  });
+  const rule = document.createElement('span');
+  rule.className = 'chapter__rule';
+  title.after(rule);
+  return { title, letters, rule, last: -1, laidOut: false };
+}
+
+// fragments de dégradé alignés pour que le titre paraisse d'un seul tenant
+function layoutTitle(t) {
+  if (!t.title.offsetWidth) return;
+  t.title.style.setProperty('--tw', `${t.title.offsetWidth}px`);
+  t.title.style.setProperty('--th', `${t.title.offsetHeight}px`);
+  t.fs = parseFloat(getComputedStyle(t.title).fontSize);
+  for (const l of t.letters) l.el.style.backgroundPosition = `${-l.el.offsetLeft - (l.el.offsetParent === t.title ? 0 : l.el.offsetParent.offsetLeft)}px ${-l.el.offsetTop}px`;
+  t.laidOut = true;
+  t.last = -1;
+}
+
+function drawTitle(t, v) {
+  if (!t.laidOut) layoutTitle(t);
+  if (Math.abs(v - t.last) < 0.0005) return;
+  t.last = v;
+  // reflet de lumière qui balaie le titre une fois les lettres posées
+  t.title.style.setProperty('--sweep', `${-30 + 160 * clamp01((v - 0.4) / 0.6)}%`);
+  for (const l of t.letters) {
+    const e = letterEase(clamp01((v - l.r * 0.45) / 0.55));
+    const q = 1 - e;
+    const s = l.el.style;
+    s.opacity = e;
+    s.filter = q > 0.002 ? `blur(${q * 14}px)` : 'none';
+    s.transform = q > 0.002 ? `translate3d(${l.dx * q * 0.22 * t.fs}px, ${q * 0.3 * t.fs}px, 0)` : 'none';
+  }
+  t.rule.style.transform = `scaleX(${letterEase(clamp01((v - 0.25) / 0.6))})`;
+}
+
+const heroIntro = { v: 0 };
+const chapters = $$('.chapter').map((el) => ({
+  el,
+  a: +el.dataset.in,
+  b: +el.dataset.out,
+  hero: el.classList.contains('chapter--hero'),
+  title: prepTitle(el.querySelector('h1, h2')),
+  extras: [...el.querySelectorAll('.chapter__num, p')],
+}));
+window.addEventListener('resize', () => chapters.forEach((c) => (c.title.laidOut = false)));
+
+const fadeIn = 0.045;
 function drawChapters(p) {
   for (const c of chapters) {
-    const v = Math.min(gsap.utils.clamp(0, 1, (p - c.a) / fadeIn), gsap.utils.clamp(0, 1, (c.b - p) / fadeIn));
-    c.el.style.opacity = v;
+    let v = Math.min(clamp01((p - c.a) / fadeIn), clamp01((c.b - p) / fadeIn));
+    if (c.hero) v = Math.min(v, heroIntro.v);
+    c.el.style.opacity = Math.min(1, v * 4);
     c.el.style.visibility = v > 0.001 ? 'visible' : 'hidden';
-    c.el.style.transform = `translate3d(0, ${(1 - v) * (p < c.a + fadeIn ? 30 : -30)}px, 0)`;
+    if (v <= 0.001 && c.title.last === 0) continue;
+    drawTitle(c.title, v);
+    c.extras.forEach((x, j) => {
+      const k = letterEase(clamp01((v - 0.35 - j * 0.08) / 0.5));
+      x.style.opacity = k;
+      x.style.filter = k < 0.998 ? `blur(${(1 - k) * 6}px)` : 'none';
+      x.style.transform = `translate3d(0, ${(1 - k) * 14}px, 0)`;
+    });
   }
   $('.journey__progress i').style.transform = `scaleX(${p})`;
+
+  // indication de scroll : « entrer » devant la pyramide, « avancer » ensuite, rien dans la galerie
+  const cueText = p < 0.3 ? 'Défiler pour entrer' : 'Défiler pour avancer';
+  if (cueLabel.textContent !== cueText) cueLabel.textContent = cueText;
+  cue.classList.toggle('is-hidden', p > 0.62);
 }
+const cue = $('.scrollcue');
+const cueLabel = $('.scrollcue span');
 
 ScrollTrigger.create({
   trigger: '#journey',
@@ -280,6 +381,8 @@ gsap.ticker.add((t) => {
   journey.update();
   if (journey.active) drawChapters(journey.progress);
   drawHandoff();
+  // bandeau flouté à partir de la descente dans la pyramide (et sur tout le reste du site)
+  nav.classList.toggle('is-solid', journey.active ? journey.progress > 0.3 : scrollY > innerHeight);
   brush.update(Math.min(dt, 0.05));
   cursor?.update();
 });
@@ -291,8 +394,8 @@ tl.to('.loader__mark, .loader__bar, .loader__pct', { opacity: 0, y: -20, duratio
   .to('.loader', { clipPath: 'inset(0 0 100% 0)', duration: 1.1, ease: 'expo.inOut' })
   .set('.loader', { display: 'none' })
   .to(journey, { intro: 1, duration: 3.6, ease: 'power3.out' }, '-=0.9')
-  .from('.hero__title span', { yPercent: 110, opacity: 0, duration: 1.6, stagger: 0.07, ease: 'expo.out' }, '-=3.2')
-  .from('.chapter--hero .eyebrow, .hero__sub, .scrollcue, .nav', { opacity: 0, y: 20, duration: 1.2, stagger: 0.12, ease: 'power3.out' }, '-=2.4')
+  .to(heroIntro, { v: 1, duration: 3.2, ease: 'power1.inOut' }, '-=3.3')
+  .from('.scrollcue, .nav', { opacity: 0, y: 20, duration: 1.2, stagger: 0.12, ease: 'power3.out' }, '-=1.6')
   .add(() => lenis.start(), '-=2');
 
 window.addEventListener('load', () => ScrollTrigger.refresh());
